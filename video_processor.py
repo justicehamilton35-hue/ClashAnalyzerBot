@@ -96,7 +96,7 @@ class VideoProcessor:
         # Initialize Roboflow client
         if roboflow_api_key:
             self.client = InferenceHTTPClient(
-                api_url="http://localhost:9001",
+                api_url="https://detect.roboflow.com",
                 api_key=roboflow_api_key
             )
         else:
