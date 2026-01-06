@@ -19,6 +19,7 @@ from video_processor import VideoProcessor
 from clashfish_engine import ClashFishEngine
 from mistake_detector import MistakeDetector
 from report_generator import ReportGenerator
+from video_annotator import VideoAnnotator
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -39,10 +40,12 @@ app.add_middleware(
 # Configuration
 UPLOAD_DIR = Path("uploads")
 REPORTS_DIR = Path("reports")
+VIDEOS_DIR = Path("annotated_videos")
 MODELS_DIR = Path("models")
 
 UPLOAD_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
+VIDEOS_DIR.mkdir(exist_ok=True)
 
 # In-memory job storage (use Redis in production)
 jobs: Dict[str, Dict] = {}
@@ -79,7 +82,9 @@ async def root():
             "upload": "/upload",
             "status": "/status/{job_id}",
             "report": "/report/{job_id}",
-            "report_html": "/report/{job_id}/html"
+            "report_html": "/report/{job_id}/html",
+            "report_text": "/report/{job_id}/text",
+            "annotated_video": "/video/{job_id}"
         }
     }
 
@@ -264,6 +269,41 @@ async def get_report_text(job_id: str):
     )
 
 
+@app.get("/video/{job_id}")
+async def get_annotated_video(job_id: str):
+    """
+    Get annotated video replay with analysis overlaid
+
+    Returns MP4 video with visual annotations showing:
+    - Player's moves (colored circles)
+    - AI's suggested optimal moves (magenta circles)
+    - Move quality indicators (Brilliant, Good, Mistake, Blunder)
+    - Evaluation loss percentages
+    - Overall stats panel
+    """
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    job = jobs[job_id]
+
+    if job["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Analysis not complete. Status: {job['status']}"
+        )
+
+    video_path = VIDEOS_DIR / f"{job_id}_annotated.mp4"
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Annotated video not found")
+
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename=f"clashfish_annotated_{job_id}.mp4"
+    )
+
+
 def analyze_video(job_id: str, video_path: Path):
     """
     Background task to analyze video
@@ -309,23 +349,42 @@ def analyze_video(job_id: str, video_path: Path):
 
         # JSON report
         json_report = generator.generate_json_report(analysis, mistakes)
-        with open(REPORTS_DIR / f"{job_id}.json", "w") as f:
+        with open(REPORTS_DIR / f"{job_id}.json", "w", encoding='utf-8') as f:
             f.write(json_report)
 
         # HTML report
         html_report = generator.generate_html_report(analysis, mistakes)
-        with open(REPORTS_DIR / f"{job_id}.html", "w") as f:
+        with open(REPORTS_DIR / f"{job_id}.html", "w", encoding='utf-8') as f:
             f.write(html_report)
 
         # Text report
         text_report = generator.generate_text_report(analysis, mistakes)
-        with open(REPORTS_DIR / f"{job_id}.txt", "w") as f:
+        with open(REPORTS_DIR / f"{job_id}.txt", "w", encoding='utf-8') as f:
             f.write(text_report)
+
+        jobs[job_id]["progress"] = 90
+        jobs[job_id]["message"] = "Creating annotated video replay..."
+
+        # Generate annotated video
+        annotator = VideoAnnotator()
+        annotated_video_path = VIDEOS_DIR / f"{job_id}_annotated.mp4"
+
+        def video_progress(progress, message):
+            jobs[job_id]["progress"] = 90 + int(progress * 0.1)  # 90-100%
+            jobs[job_id]["message"] = message
+
+        annotator.annotate_video(
+            str(video_path),
+            str(annotated_video_path),
+            analysis,
+            progress_callback=video_progress
+        )
 
         # Update job status
         jobs[job_id]["status"] = "completed"
         jobs[job_id]["progress"] = 100
         jobs[job_id]["message"] = "Analysis complete!"
+        jobs[job_id]["annotated_video"] = str(annotated_video_path)
         jobs[job_id]["completed_at"] = datetime.now().isoformat()
         jobs[job_id]["analysis_summary"] = {
             "accuracy": round(analysis.accuracy_score, 2),

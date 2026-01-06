@@ -232,6 +232,27 @@
             color: #4caf50;
             font-weight: bold;
         }
+
+        .video-player {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .video-player video {
+            width: 100%;
+            display: block;
+        }
+
+        .video-label {
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            color: #667eea;
+        }
     </style>
 </head>
 <body>
@@ -276,6 +297,14 @@
         <!-- Result Section -->
         <div class="card result-section" id="resultSection">
             <h2>Analysis Complete!</h2>
+
+            <div class="video-label">📹 Annotated Replay with AI Analysis</div>
+            <div class="video-player">
+                <video id="annotatedVideo" controls>
+                    <source id="videoSource" src="" type="video/mp4">
+                    Your browser doesn't support video playback.
+                </video>
+            </div>
 
             <div class="accuracy-display">
                 <div class="score" id="accuracyScore">--</div>
@@ -474,6 +503,13 @@
                 // Set report links
                 document.getElementById('viewReportBtn').href = `${API_URL}/report/${currentJobId}/html`;
                 document.getElementById('downloadJsonBtn').href = `${API_URL}/report/${currentJobId}`;
+
+                // Set video source
+                const videoElement = document.getElementById('annotatedVideo');
+                const videoSource = document.getElementById('videoSource');
+                videoSource.src = `${API_URL}/video/${currentJobId}`;
+                videoElement.load(); // Reload video with new source
+
             } catch (error) {
                 alert('Failed to load results: ' + error.message);
             }
