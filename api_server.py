@@ -14,12 +14,16 @@ import shutil
 from pathlib import Path
 import json
 from datetime import datetime
+from dotenv import load_dotenv
 
 from video_processor import VideoProcessor
 from clashfish_engine import ClashFishEngine
 from mistake_detector import MistakeDetector
 from report_generator import ReportGenerator
 from video_annotator import VideoAnnotator
+
+# Load environment variables
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -323,8 +327,22 @@ def analyze_video(job_id: str, video_path: Path):
         if not model_path:
             raise Exception("No trained model found")
 
+        # Load Roboflow configuration
+        roboflow_api_key = os.getenv('ROBOFLOW_API_KEY')
+        roboflow_workspace_card = os.getenv('WORKSPACE_CARD_DETECTION')
+        roboflow_workspace_troop = os.getenv('WORKSPACE_TROOP_DETECTION')
+
+        print(f"🔑 Using Roboflow API key: {roboflow_api_key[:10]}..." if roboflow_api_key else "No API key")
+        print(f"📦 Card workspace: {roboflow_workspace_card}")
+        print(f"📦 Troop workspace: {roboflow_workspace_troop}")
+
         # Process video
-        processor = VideoProcessor(fps=2.0)
+        processor = VideoProcessor(
+            fps=2.0,
+            roboflow_workspace_card=roboflow_workspace_card,
+            roboflow_workspace_troop=roboflow_workspace_troop,
+            roboflow_api_key=roboflow_api_key
+        )
         game_states, actions = processor.process_video(str(video_path))
 
         jobs[job_id]["progress"] = 40
