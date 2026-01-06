@@ -1,0 +1,30 @@
+# ClashFish AI Coach Requirements
+
+# Core ML and CV
+torch>=2.0.0
+numpy==2.2.6
+opencv-python==4.10.0.84
+pillow==11.3.0
+
+# Computer Vision API
+inference-sdk==0.51.7
+supervision==0.25.1
+
+# Web API
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.0.0
+
+# Utilities
+python-dotenv==1.0.0
+requests==2.32.4
+tqdm==4.67.1
+
+# Original bot dependencies (optional for backwards compatibility)
+PyAutoGUI==0.9.54
+PyGetWindow==0.0.9
+pynput
+
+# Development
+pytest>=7.4.0

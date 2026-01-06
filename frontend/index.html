@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClashFish - AI Clash Royale Coach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .upload-section {
+            text-align: center;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 20px 0;
+        }
+
+        .upload-area:hover {
+            background: #f5f5ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragging {
+            background: #e8eaff;
+            border-color: #667eea;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            margin-top: 15px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+        }
+
+        .progress-bar-container {
+            background: #e0e0e0;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .status-message {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .summary-item {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-item .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .summary-item .label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .accuracy-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .accuracy-display .score {
+            font-size: 4em;
+            font-weight: bold;
+        }
+
+        .accuracy-display .label {
+            color: #666;
+            font-size: 1.2em;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .action-buttons a {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .features {
+            color: white;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .features h3 {
+            margin-bottom: 15px;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 8px;
+            opacity: 0.9;
+        }
+
+        .features li::before {
+            content: "✓ ";
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚔️ ClashFish</h1>
+            <p>AI Clash Royale Coach</p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="card upload-section" id="uploadSection">
+            <h2>Upload Your Game</h2>
+            <p style="color: #666; margin: 10px 0;">Record your Clash Royale match and upload for AI analysis</p>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📹</div>
+                <p><strong>Drop video here or click to browse</strong></p>
+                <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
+                    Supported: MP4, MOV, AVI (Max 100MB)
+                </p>
+            </div>
+
+            <input type="file" id="fileInput" accept="video/mp4,video/quicktime,video/x-msvideo">
+
+            <div id="selectedFile" style="display: none; margin: 15px 0; color: #666;">
+                Selected: <strong id="fileName"></strong>
+            </div>
+
+            <button class="btn" id="uploadBtn" disabled>Analyze Game</button>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="card progress-section" id="progressSection">
+            <h2>Analyzing Your Game...</h2>
+            <div class="spinner"></div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar">0%</div>
+            </div>
+            <p class="status-message" id="statusMessage">Uploading video...</p>
+        </div>
+
+        <!-- Result Section -->
+        <div class="card result-section" id="resultSection">
+            <h2>Analysis Complete!</h2>
+
+            <div class="accuracy-display">
+                <div class="score" id="accuracyScore">--</div>
+                <div class="label">Accuracy</div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="value" id="totalMoves">--</div>
+                    <div class="label">Total Moves</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value" id="blunders">--</div>
+                    <div class="label">Blunders</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value" id="overallRating">--</div>
+                    <div class="label">Overall Rating</div>
+                </div>
+                <div class="summary-item">
+                    <div class="value" id="mistakes">--</div>
+                    <div class="label">Mistakes</div>
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="#" id="viewReportBtn" target="_blank">📊 View Full Report</a>
+                <a href="#" id="downloadJsonBtn">💾 Download JSON</a>
+            </div>
+
+            <button class="btn" onclick="location.reload()" style="margin-top: 20px;">
+                Analyze Another Game
+            </button>
+        </div>
+
+        <!-- Features Section -->
+        <div class="features">
+            <h3>What ClashFish Analyzes</h3>
+            <ul>
+                <li>Move-by-move game analysis</li>
+                <li>Elixir management rating</li>
+                <li>Card placement evaluation</li>
+                <li>Mistake detection (blunders, errors)</li>
+                <li>AI-powered improvement tips</li>
+                <li>Strategic decision analysis</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        let selectedFile = null;
+        let currentJobId = null;
+
+        // Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const fileNameSpan = document.getElementById('fileName');
+
+        const uploadSection = document.getElementById('uploadSection');
+        const progressSection = document.getElementById('progressSection');
+        const resultSection = document.getElementById('resultSection');
+
+        const progressBar = document.getElementById('progressBar');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Upload area click
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                fileNameSpan.textContent = file.name;
+                selectedFileDiv.style.display = 'block';
+                uploadBtn.disabled = false;
+            }
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('video/')) {
+                selectedFile = file;
+                fileNameSpan.textContent = file.name;
+                selectedFileDiv.style.display = 'block';
+                uploadBtn.disabled = false;
+            } else {
+                alert('Please drop a video file');
+            }
+        });
+
+        // Upload and analyze
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            // Show progress section
+            uploadSection.style.display = 'none';
+            progressSection.style.display = 'block';
+
+            // Upload file
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch(`${API_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                currentJobId = data.job_id;
+
+                // Start polling for status
+                pollStatus();
+            } catch (error) {
+                alert('Upload failed: ' + error.message);
+                location.reload();
+            }
+        });
+
+        // Poll analysis status
+        async function pollStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`${API_URL}/status/${currentJobId}`);
+                const data = await response.json();
+
+                // Update progress
+                progressBar.style.width = data.progress + '%';
+                progressBar.textContent = data.progress + '%';
+                statusMessage.textContent = data.message;
+
+                if (data.status === 'completed') {
+                    // Show results
+                    showResults();
+                } else if (data.status === 'failed') {
+                    alert('Analysis failed: ' + data.message);
+                    location.reload();
+                } else {
+                    // Continue polling
+                    setTimeout(pollStatus, 2000);
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+                setTimeout(pollStatus, 2000);
+            }
+        }
+
+        // Show results
+        async function showResults() {
+            try {
+                const response = await fetch(`${API_URL}/report/${currentJobId}`);
+                const report = await response.json();
+
+                // Hide progress, show results
+                progressSection.style.display = 'none';
+                resultSection.style.display = 'block';
+
+                // Populate summary
+                const summary = report.summary;
+                document.getElementById('accuracyScore').textContent = summary.accuracy_score + '%';
+                document.getElementById('totalMoves').textContent = summary.total_moves;
+                document.getElementById('blunders').textContent = summary.move_quality.blunders;
+                document.getElementById('mistakes').textContent = summary.move_quality.mistakes;
+                document.getElementById('overallRating').textContent = summary.ratings.overall + '/10';
+
+                // Color code accuracy
+                const scoreElement = document.getElementById('accuracyScore');
+                if (summary.accuracy_score >= 80) {
+                    scoreElement.style.color = '#4caf50';
+                } else if (summary.accuracy_score >= 60) {
+                    scoreElement.style.color = '#ffc107';
+                } else {
+                    scoreElement.style.color = '#f44336';
+                }
+
+                // Set report links
+                document.getElementById('viewReportBtn').href = `${API_URL}/report/${currentJobId}/html`;
+                document.getElementById('downloadJsonBtn').href = `${API_URL}/report/${currentJobId}`;
+            } catch (error) {
+                alert('Failed to load results: ' + error.message);
+            }
+        }
+    </script>
+</body>
+</html>
