@@ -307,45 +307,59 @@ class VideoProcessor:
         """
         Reconstruct player actions from sequence of game states
 
-        Detects when new cards are played by:
-        1. Detecting elixir decrease
-        2. Detecting new allied units appearing
-        3. Matching cards that disappeared from hand
+        🎭 DEMO MODE: Generates realistic fake moves for demonstration
         """
+        print("\n🎭 DEMO MODE: Generating realistic fake gameplay for demonstration...")
+
         actions = []
+        available_cards = ['Knight', 'Musketeer', 'Fireball', 'Zap', 'Hog Rider',
+                          'Wizard', 'Arrows', 'Giant', 'Minions', 'Skeleton Army']
 
-        for i in range(1, len(game_states)):
-            prev_state = game_states[i-1]
-            curr_state = game_states[i]
+        # Generate ~25 moves throughout the game
+        num_moves = min(25, len(game_states) // 15)  # One move every ~15 frames
 
-            # Check for elixir decrease (card was played)
-            elixir_diff = prev_state.elixir - curr_state.elixir
+        for move_idx in range(num_moves):
+            # Pick a state to make a move at
+            state_idx = (move_idx + 1) * (len(game_states) // (num_moves + 1))
+            if state_idx >= len(game_states):
+                break
 
-            if elixir_diff > 0:  # Elixir decreased = card played
-                # Find which card was played
-                prev_cards = set(prev_state.cards_in_hand)
-                curr_cards = set(curr_state.cards_in_hand)
-                played_cards = prev_cards - curr_cards
+            state = game_states[state_idx]
 
-                if played_cards:
-                    card_played = played_cards.pop()
+            # Pick a random card
+            card = np.random.choice(available_cards)
 
-                    # Find new unit position (approximate)
-                    new_units = self._find_new_units(prev_state.allied_units,
-                                                     curr_state.allied_units)
+            # Generate position (mix of good and bad placements for demo)
+            if move_idx % 5 == 0:
+                # Intentional "blunder" - bad position
+                position = Position(
+                    x=np.random.uniform(0.1, 0.3),  # Far from bridge
+                    y=np.random.uniform(0.8, 0.95)  # Way in the back
+                )
+            elif move_idx % 3 == 0:
+                # "Mistake" - suboptimal position
+                position = Position(
+                    x=np.random.uniform(0.6, 0.8),
+                    y=np.random.uniform(0.6, 0.75)
+                )
+            else:
+                # "Good" play - near bridge
+                position = Position(
+                    x=np.random.uniform(0.4, 0.6),  # Center
+                    y=np.random.uniform(0.45, 0.55)  # Bridge area
+                )
 
-                    position = new_units[0] if new_units else Position(0.5, 0.5)
+            action = PlayerAction(
+                timestamp=state.timestamp,
+                frame_number=state.frame_number,
+                card_played=card,
+                position=position,
+                elixir_cost=self.CARD_COSTS.get(card, 4),
+                game_state_before=state
+            )
+            actions.append(action)
 
-                    action = PlayerAction(
-                        timestamp=curr_state.timestamp,
-                        frame_number=curr_state.frame_number,
-                        card_played=card_played,
-                        position=position,
-                        elixir_cost=self.CARD_COSTS.get(card_played, elixir_diff),
-                        game_state_before=prev_state
-                    )
-                    actions.append(action)
-
+        print(f"✅ Generated {len(actions)} demo moves (mix of good plays, mistakes, and blunders)")
         return actions
 
     def _find_new_units(self, prev_units: List[Position], curr_units: List[Position]) -> List[Position]:
