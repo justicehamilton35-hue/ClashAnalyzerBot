@@ -1,0 +1,41 @@
+# Clash Royale Analyzer Requirements
+# Python dependencies for the analyzer system
+
+# Core dependencies (from original project)
+torch>=2.0.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+pyautogui>=0.9.54
+python-dotenv>=1.0.0
+inference-sdk>=0.5.0
+
+# Video processing
+opencv-contrib-python>=4.8.0
+
+# Backend API
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+aiofiles>=23.2.0
+
+# Data handling
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+
+# Async support
+celery>=5.3.0  # For background tasks (optional)
+redis>=5.0.0  # For caching (optional)
+
+# Database (optional - for persistent storage)
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+
+# Testing
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0  # For testing FastAPI
+
+# Development
+black>=23.10.0
+flake8>=6.1.0
+mypy>=1.6.0
